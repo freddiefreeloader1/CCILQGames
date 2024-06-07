@@ -283,7 +283,8 @@ class OverallCost:
                     if timestep > self.ref_cost_threshold:
                         total_cost += np.array(subsystem_cost.gradient_x(x, u))
                 else:
-                    total_cost += np.array(subsystem_cost.gradient_x(x, u))
+                    if timestep > 0:
+                        total_cost += np.array(subsystem_cost.gradient_x(x, u))
 
         return total_cost
 
@@ -300,7 +301,8 @@ class OverallCost:
                     if timestep > self.ref_cost_threshold:
                         grad_x += np.array(subsystem_cost.gradient_x(x, u))
                 else:
-                    grad_x += np.array(subsystem_cost.gradient_x(x, u))
+                     if timestep > 0:
+                        grad_x += np.array(subsystem_cost.gradient_x(x, u))
 
         return grad_x
 

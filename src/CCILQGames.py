@@ -30,6 +30,7 @@ class CCILQGame():
         self.costs = self.mp_dynamics.define_costs_lists(uncertainty=True)
         self.initial_mu = config['initial_mu']
         self.mu = self.get_mu()
+        self.d_safe = config['d_safe']
 
     def append_velocities(self):
         for i in range(len(self.x0s)):
@@ -113,7 +114,7 @@ class CCILQGame():
         for i in range(len(self.mp_dynamics.agent_list)):
             for j in range(len(self.mp_dynamics.agent_list)):
                 if i != j:
-                    prox_cost_list[i].append(ProximityCost(1.0, i, j, 200.0))
+                    prox_cost_list[i].append(ProximityCost(self.d_safe, i, j, 200.0))
 
 
         for i in range(self.mp_dynamics.num_agents):
@@ -324,9 +325,9 @@ class CCILQGame():
         except KeyboardInterrupt:
             for ii in range(self.mp_dynamics.TIMESTEPS):
                 for i, agent in enumerate(self.mp_dynamics.agent_list):
-                    x_traj[i].append(xs_real[i][ii][0])
-                    y_traj[i].append(xs_real[i][ii][1])
-                    headings[i].append(xs_real[i][ii][2])
+                    x_traj[i].append(xs[i][ii][0])
+                    y_traj[i].append(xs[i][ii][1])
+                    headings[i].append(xs[i][ii][2])
             vr, vl = self.mp_dynamics.compute_wheel_speeds(u1, u2)
             for ii in range(len(total_costs)):
                 if type(total_costs[ii]) is list: 
@@ -341,9 +342,9 @@ class CCILQGame():
 
         for ii in range(self.mp_dynamics.TIMESTEPS):
             for i, agent in enumerate(self.mp_dynamics.agent_list):
-                x_traj[i].append(xs_real[i][ii][0])
-                y_traj[i].append(xs_real[i][ii][1])
-                headings[i].append(xs_real[i][ii][2])
+                x_traj[i].append(xs[i][ii][0])
+                y_traj[i].append(xs[i][ii][1])
+                headings[i].append(xs[i][ii][2])
 
         vr, vl = self.mp_dynamics.compute_wheel_speeds(u1, u2)
 
@@ -357,11 +358,12 @@ class CCILQGame():
         plt.plot(total_wall_costs)
 
         plt.legend(['Total Cost','Proximity Cost', 'Reference Cost', 'Input Cost', 'Wall Cost'])
-        plt.xlabel('Time Step')
+        plt.xlabel('Iterations')
         plt.ylabel('Cost')
-        plt.title('Costs over Time')
+        plt.title('Costs over Iterations')
         plt.show()
 
+        
 
         plt.ion()
         fig, ax = plt.subplots()
@@ -369,12 +371,12 @@ class CCILQGame():
         ax.set_ylim(-1.6, 1.6)
         ax.grid(True)
         colors = ['ro', 'go', 'bo', 'co', 'mo', 'yo']
-
+        
         for kk in range(self.mp_dynamics.TIMESTEPS):    
             ax.clear()
             ax.grid(True)
-            ax.set_xlim(-3.5, 3.5)
-            ax.set_ylim(-1.6, 1.6)
+            ax.set_ylim(-3.5, 3.5)
+            ax.set_xlim(-1.6, 1.6)
 
             for i in range(self.mp_dynamics.num_agents):
                 ax.plot(x_traj[i][kk], y_traj[i][kk], colors[i], label=f'Robot {i}', markersize=15)
@@ -429,18 +431,19 @@ class CCILQGame():
 def main():
     # Define the configuration dictionary
     config = {
-        'dt': 0.2,
-        'HORIZON': 6,
-        'initial_vels': [0.0, 0.0],
-        'x0s': [[-3.0, -1.0, 0.0], [-3.0, 1.4, 0.0]],
-        'xrefs': [[2, 1, 0, 0], [2.0, -1, 0, 0]],
-        'sigmas': [[0.01, 0.01, 0.01, 0.01], [0.01, 0.01, 0.01, 0.01]],
-        'num_agents': 2,
-        'ref_cost_threshold': 20,
-        'prob': 0.95,
-        'TOL_CC_ERROR': 0.08,
+        'dt': 0.8,
+        'HORIZON': 16,
+        'initial_vels': [0.0, 0.0, 0.0, 0.0],
+        'x0s': [[-1.0, 2.0, 0], [0.0, 3.0, 0.0], [0.5, 2.0, 0.0], [-1.5, -1.5, 0.0]],
+        'xrefs': [[0, 0, np.pi/2, 0], [1, 0.0,  np.pi/2, 0], [-1, 0.0,  np.pi/2, 0], [0.0, 1.5,  np.pi/2, 0]],
+        'sigmas': [[0.8, 0.8, 0.8, 0.8], [0.8, 0.8, 0.8, 0.8], [0.8, 0.8, 0.8, 0.8], [0.8, 0.8, 0.8, 0.8]],
+        'num_agents': 4,
+        'ref_cost_threshold': 10,
+        'prob': 0.99,
+        'TOL_CC_ERROR': 0.1,
         'initial_mu': 0.005,
-        'phi':2.0
+        'phi':2.0,
+        'd_safe': 0.5
     }
 
     # Create an instance of the CCILQGame class

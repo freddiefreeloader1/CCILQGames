@@ -53,11 +53,11 @@ class MultiAgentDynamics():
         speed_cost_list = [[] for _ in range(len(self.agent_list))]
 
         for i, agent in enumerate(self.agent_list):
-            ref_cost_list[i].append(ReferenceCost(i, self.xref_mp, [40,40,1,10]))
-            input_cost_list[i].append(InputCost(i, 600.0, 600.0))
+            ref_cost_list[i].append(ReferenceCost(i, self.xref_mp, [40,40,40,0]))
+            input_cost_list[i].append(InputCost(i, 300.0, 200.0))
             
             if True:
-                speed_cost_list[i].append(SpeedCost(i, 10))
+                speed_cost_list[i].append(SpeedCost(i, 50))
                 
 
         if uncertainty == False:
@@ -68,7 +68,7 @@ class MultiAgentDynamics():
         else:
             for i in range(len(self.agent_list)):
                 for j in range(len(self.agent_list)-1):
-                    prox_cost_list[i].append(ProximityCostUncertainLinear(1.0))
+                    prox_cost_list[i].append(ProximityCostUncertainLinear(0.0))
                     prox_cost_list[i].append(ProximityCostUncertainQuad(0.0))
                     
         for i in range(len(self.agent_list)):
@@ -158,7 +158,7 @@ class MultiAgentDynamics():
 
     def line_search(self, Ps, alphas, current_x, u_prev):
         zeta = 1.0
-        while True:
+        while zeta > 1e-4:
             xs, u_next = self.compute_op_point_imposter(Ps, alphas, current_x, u_prev, zeta)
             if (np.linalg.norm(xs-current_x) < 50):
                 break
