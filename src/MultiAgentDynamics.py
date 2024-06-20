@@ -57,7 +57,7 @@ class MultiAgentDynamics():
             input_cost_list[i].append(InputCost(i, 300.0, 200.0))
             
             if True:
-                speed_cost_list[i].append(SpeedCost(i, 50))
+                speed_cost_list[i].append(SpeedCost(i, 10))
                 
 
         if uncertainty == False:
@@ -68,11 +68,11 @@ class MultiAgentDynamics():
         else:
             for i in range(len(self.agent_list)):
                 for j in range(len(self.agent_list)-1):
-                    prox_cost_list[i].append(ProximityCostUncertainLinear(0.0))
+                    prox_cost_list[i].append(ProximityCostUncertainLinear(1.0))
                     prox_cost_list[i].append(ProximityCostUncertainQuad(0.0))
                     
         for i in range(len(self.agent_list)):
-            wall_cost_list[i].append(WallCost(i, 0.04))
+            wall_cost_list[i].append(WallCost(i, 0.0))
 
         for i in range(len(self.agent_list)):
             # add the reference cost and the proximity cost to the overall cost list

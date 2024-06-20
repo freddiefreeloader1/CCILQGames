@@ -156,8 +156,6 @@ class InputCost:
     def hessian_x(self, x, u):
         return np.zeros((len(x), len(x)))
 
-
-
 class WallCost:
     def __init__(self, idx, weight=1.0):
         self.idx = idx
@@ -231,20 +229,23 @@ class SpeedCost:
         self.weight = weight
         self.idx = idx
 
-    def evaluate(self, x, u):
-        return self.weight*((x[4*self.idx+3])**2)
+    def evaluate(self, x, u, lam, flag = True):
+        if flag:
+            return lam*self.weight*((x[4*self.idx+3])**2 - 0.6**2)
+        else:
+            return self.weight*((x[4*self.idx+3])**2 - 0.6**2)
 
-    def gradient_x(self, x, u):
+    def gradient_x(self, x, u, lam):
         grad_x = [0.0 for _ in range(len(x))]
-        grad_x[4*self.idx+3] = 2*self.weight*(x[4*self.idx+3])
+        grad_x[4*self.idx+3] = lam*2*self.weight*(x[4*self.idx+3])
         return grad_x
     
-    def gradient_u(self, x, u):
+    def gradient_u(self, x, u, lam = 1.0):
         return [0.0 for _ in range(len(u))]
 
-    def hessian_x(self, x, u):
+    def hessian_x(self, x, u, lam):
         hessian_x = np.zeros((len(x), len(x)))
-        hessian_x[4*self.idx + 3, 4*self.idx + 3] = 2 * self.weight
+        hessian_x[4*self.idx + 3, 4*self.idx + 3] = 2 * self.weight * lam
         return hessian_x    
 
 class TrialCost:
@@ -266,6 +267,8 @@ class OverallCost:
                 total_cost += subsystem_cost.evaluate(x, G , q, rho, lam)
             elif isinstance(subsystem_cost, ProximityCostUncertainQuad):
                 total_cost += subsystem_cost.evaluate(x, G , q, rho, I)
+            elif isinstance(subsystem_cost, SpeedCost):
+                total_cost += subsystem_cost.evaluate(x, u, lam)
             else:
                 total_cost += subsystem_cost.evaluate(x, u)
             # print(subsystem_cost.evaluate(x, u))
@@ -278,6 +281,8 @@ class OverallCost:
                 total_cost += np.array(subsystem_cost.gradient_x(x, G, q, rho, lam))
             elif isinstance(subsystem_cost, ProximityCostUncertainQuad):
                 total_cost += np.array(subsystem_cost.gradient_x(x, G, q, rho, I))
+            elif isinstance(subsystem_cost, SpeedCost):
+                total_cost += np.array(subsystem_cost.gradient_x(x, u, lam))
             else:
                 if isinstance(subsystem_cost, ReferenceCost):
                     if timestep > self.ref_cost_threshold:
@@ -296,6 +301,8 @@ class OverallCost:
                 grad_x += np.array(subsystem_cost.gradient_x(x, G, q, rho, lam))
             elif isinstance(subsystem_cost, ProximityCostUncertainQuad):
                 grad_x += np.array(subsystem_cost.gradient_x(x, G, q, rho, I))
+            elif isinstance(subsystem_cost, SpeedCost):
+                grad_x += np.array(subsystem_cost.gradient_x(x, u, lam))
             else:
                 if isinstance(subsystem_cost, ReferenceCost):
                     if timestep > self.ref_cost_threshold:
@@ -332,6 +339,8 @@ class OverallCost:
                 hessian_x += subsystem_cost.hessian_x(x, G , q, rho, lam)
             elif isinstance(subsystem_cost, ProximityCostUncertainQuad):
                 hessian_x += subsystem_cost.hessian_x(x, G , q, rho, I)
+            elif isinstance(subsystem_cost, SpeedCost):
+                hessian_x += subsystem_cost.hessian_x(x, u, lam)
             else:
                 hessian_x += subsystem_cost.hessian_x(x, u)
         return hessian_x

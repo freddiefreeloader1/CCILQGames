@@ -8,7 +8,7 @@ import numpy as np
 class RobotGUI:
     final_positions = None  # Class attribute to store final positions
 
-    def __init__(self, master, num_robots=2, init_pos=[[0, 0, 0], [1, 1, 0]]):
+    def __init__(self, master, num_robots=4, init_pos=[[0, 0, 0], [1, 1, 0], [1, -1, 0], [-1, 0, 0]]):
         self.master = master
         self.master.title("Robot Reference Point Selector")
 
@@ -45,7 +45,7 @@ class RobotGUI:
         self.dropdown.pack(side=tk.LEFT, padx=10, pady=10)
 
     def create_done_button(self):
-        self.done_button = tk.Button(self.master, text="Done", command=self.return_final_positions_and_close)
+        self.done_button = tk.Button(self.master, text="GO!", command=self.return_final_positions_and_close)
         self.done_button.pack(side=tk.BOTTOM, pady=10)
 
     def plot_initial_positions(self, color='bo'):
@@ -121,7 +121,7 @@ def run_gui():
     app = RobotGUI(root)
     root.protocol("WM_DELETE_WINDOW", app.master.quit)  # Quit gracefully if window is closed
     # Adjust the width and height of the canvas
-    app.canvas.get_tk_widget().config(width=600, height=1200)
+    app.canvas.get_tk_widget().config(width=450, height=900)
     root.mainloop()
     return final_positions
 
