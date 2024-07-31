@@ -248,6 +248,7 @@ class SpeedCost:
         hessian_x[4*self.idx + 3, 4*self.idx + 3] = 2 * self.weight * lam
         return hessian_x    
 
+
 class TrialCost:
     def __init__(self, d_threshold=0.5):
         self.d_threshold = 0.5

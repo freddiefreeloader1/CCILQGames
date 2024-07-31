@@ -355,9 +355,9 @@ class CCILQGame():
 
         for ii in range(self.mp_dynamics.TIMESTEPS):
             for i, agent in enumerate(self.mp_dynamics.agent_list):
-                x_traj[i].append(xs[i][ii][0])
-                y_traj[i].append(xs[i][ii][1])
-                headings[i].append(xs[i][ii][2])
+                x_traj[i].append(xs_real[i][ii][0])
+                y_traj[i].append(xs_real[i][ii][1])
+                headings[i].append(xs_real[i][ii][2])
 
         vr, vl = self.mp_dynamics.compute_wheel_speeds(u1, u2)
 
@@ -449,7 +449,7 @@ def main():
         'initial_vels': [0.0, 0.0, 0.0],
         'x0s': [[-2.0, 1.0, 0], [0.0, 1.0, 0.0], [1.5, 1.0, 0.0]],
         'xrefs': [[0, 0, np.pi/2, 0], [2, -1.0,  np.pi/2, 0], [-1, 0.0,  np.pi/2, 0]],
-        'sigmas': [[0.2, 0.2, 0.2, 0.2], [0.2, 0.2, 0.2, 0.2], [0.2, 0.2, 0.2, 0.2]],
+        'sigmas': [[0.005, 0.005, 0.005, 0.005], [0.005, 0.005, 0.005, 0.005], [0.005, 0.005, 0.005, 0.005]],
         'num_agents': 3,
         'ref_cost_threshold': 25,
         'prob': 0.99,

@@ -160,7 +160,7 @@ class MultiAgentDynamics():
         zeta = 1.0
         while zeta > 1e-4:
             xs, u_next = self.compute_op_point_imposter(Ps, alphas, current_x, u_prev, zeta)
-            if (np.linalg.norm(xs-current_x) < 50):
+            if (np.linalg.norm(xs-current_x) < 25):
                 break
             zeta = zeta/2
 
