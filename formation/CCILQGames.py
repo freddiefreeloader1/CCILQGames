@@ -5,7 +5,7 @@ from scipy.linalg import block_diag
 
 from solve_lq_problem import solve_lq_game
 from Diff_robot_uncertainty import UnicycleRobotUncertain
-from Costs import ProximityCost, OverallCost, ReferenceCost, WallCost, ProximityCostUncertainLinear , ProximityCostUncertainQuad, InputCost, SpeedCost
+from Costs import ProximityCost, OverallCost, ReferenceCost, WallCost, ProximityCostUncertainLinear , ProximityCostUncertainQuad, InputCost, SpeedCost, RelativeCost
 from MultiAgentDynamics import MultiAgentDynamics
 
 
@@ -162,14 +162,15 @@ class CCILQGame():
         total_prox_costs = []
         total_wall_costs = []
         total_input_costs = []
+        total_rel_costs = []
 
 
-        # plt.ion()
-        # fig, ax = plt.subplots()
-        # ax.set_xlim(-3.5, 3.5)
-        # ax.set_ylim(-1.6, 1.6)
-        # ax.grid(True)
-        # colors = ['ro', 'go', 'bo', 'co', 'mo', 'yo']
+        plt.ion()
+        fig, ax = plt.subplots()
+        ax.set_xlim(-4, 4)
+        ax.set_ylim(-4, 4)
+        ax.grid(True)
+        colors = ['ro', 'go', 'bo', 'co', 'mo', 'yo']
 
         try:
             while(max_error > self.TOL_CC_ERROR):
@@ -226,19 +227,19 @@ class CCILQGame():
                     
                     xs, control_inputs = self.mp_dynamics.compute_op_point(Ps, alphas, current_points, prev_control_inputs, 0.02 , False)
 
-                    # ax.clear()
-                    # ax.grid(True)
-                    # ax.set_xlim(-3.5, 3.5)
-                    # ax.set_ylim(-1.6, 1.6)
+                    ax.clear()
+                    ax.grid(True)
+                    ax.set_xlim(-4, 4)
+                    ax.set_ylim(-4,4)
 
-                    # # get the first elements of xs
+                    # get the first elements of xs
 
-                    # for i in range(self.mp_dynamics.num_agents):
-                    #     ax.plot([x[0] for x in xs[i]], [x[1] for x in xs[i]], colors[i], label=f'Robot {i}', markersize=5)
+                    for i in range(self.mp_dynamics.num_agents):
+                        ax.plot([x[0] for x in xs[i]], [x[1] for x in xs[i]], colors[i], label=f'Robot {i}', markersize=5)
 
-                    # plt.pause(0.01)
-                    # time.sleep(0.01)
-                    # plt.show()
+                    plt.pause(0.01)
+                    time.sleep(0.01)
+                    plt.show()
 
                     u1 = control_inputs[:,:,0]
                     u2 = control_inputs[:,:,1]
@@ -267,6 +268,7 @@ class CCILQGame():
                     total_prox_costs.append([])
                     total_wall_costs.append([])
                     total_input_costs.append([])
+                    total_rel_costs.append([])
 
                     for ii in range(self.mp_dynamics.TIMESTEPS):
                         concatenated_states = np.concatenate([state[ii] for state in xs])
@@ -310,6 +312,8 @@ class CCILQGame():
                                 if isinstance(cost, ProximityCostUncertainQuad):
                                     for k in range(len(Gs[i][ii])):
                                         total_prox_costs[total_time_steps].append(cost.evaluate(concatenated_states, Gs[i][ii][k], qs[i][ii][k], rhos[i][ii][k], Is[i][k]))
+                                if isinstance(cost, RelativeCost):
+                                    total_rel_costs[total_time_steps].append(cost.evaluate(concatenated_states, control_inputs[i][ii]))                                  
                             
 
                     # sum the costs 
@@ -323,6 +327,7 @@ class CCILQGame():
                     total_ref_costs[total_time_steps] = sum(total_ref_costs[total_time_steps])
                     total_input_costs[total_time_steps] = sum(total_input_costs[total_time_steps])
                     total_wall_costs[total_time_steps] = sum(total_wall_costs[total_time_steps])
+                    total_rel_costs[total_time_steps] = sum(total_rel_costs[total_time_steps])
 
 
                     Ps, alphas = solve_lq_game(As, Bs, Qs, ls, Rs)
@@ -359,6 +364,7 @@ class CCILQGame():
                     total_ref_costs[ii] = sum(total_ref_costs[ii])
                     total_input_costs[ii] = sum(total_input_costs[ii])
                     total_wall_costs[ii] = sum(total_wall_costs[ii])
+                    total_rel_costs[ii] = sum(total_rel_costs[ii])
 
         plt.ioff()
         plt.close()
@@ -376,19 +382,20 @@ class CCILQGame():
         vr, vl = self.mp_dynamics.compute_wheel_speeds(u1, u2)
 
             
-        # # plot costs
-        # plt.figure()
-        # plt.plot(total_costs)
-        # plt.plot(total_prox_costs)
-        # plt.plot(total_ref_costs)
-        # plt.plot(total_input_costs)
-        # plt.plot(total_wall_costs)
+        # plot costs
+        plt.figure()
+        plt.plot(total_costs)
+        plt.plot(total_prox_costs)
+        plt.plot(total_ref_costs)
+        plt.plot(total_input_costs)
+        plt.plot(total_wall_costs)
+        plt.plot(total_rel_costs)
 
-        # plt.legend(['Total Cost','Proximity Cost', 'Reference Cost', 'Input Cost', 'Wall Cost'])
-        # plt.xlabel('Iterations')
-        # plt.ylabel('Cost')
-        # plt.title('Costs over Iterations')
-        # plt.show()
+        plt.legend(['Total Cost','Proximity Cost', 'Reference Cost', 'Input Cost', 'Wall Cost', 'Relative Cost'])
+        plt.xlabel('Iterations')
+        plt.ylabel('Cost')
+        plt.title('Costs over Iterations')
+        plt.show()
 
         
         if plot:
@@ -406,8 +413,8 @@ class CCILQGame():
                 ax.set_ylim(-4, 4)
 
                 for i in range(self.mp_dynamics.num_agents):
-                    ax.plot(x_traj_real[i][kk], y_traj_real[i][kk], colors[i], label=f'Robot {i}', markersize=15)
-                    ax.arrow(x_traj_real[i][kk], y_traj_real[i][kk], 0.2 * np.cos(headings_real[i][kk]), 0.2 * np.sin(headings_real[i][kk]), head_width=0.02)
+                    ax.plot(x_traj[i][kk], y_traj[i][kk], colors[i], label=f'Robot {i}', markersize=15)
+                    ax.arrow(x_traj[i][kk], y_traj[i][kk], 0.2 * np.cos(headings[i][kk]), 0.2 * np.sin(headings[i][kk]), head_width=0.02)
 
                 plt.pause(0.01)
                 time.sleep(0.01)
@@ -460,37 +467,22 @@ def main():
     # Define the configuration dictionary
     sigma_value = 0.005
     num_elements = 4
-    num_agents = 3
+    num_agents = 4
 
-    config = {
-        'dt': 0.6,
-        'HORIZON': 30,
-        'initial_vels': [0.1, 0.1, 0.3],
-        'x0s': [[3.0, -1.0, np.pi], [-3.0, 1.0, 0.0], [-1, 4.0, -np.pi/2]],
-        'xrefs': [[-2, -1, np.pi, 0], [3, 1.0,  0, 0], [-1, -3.0,  -np.pi/2, 0]],
-        'sigmas': [[sigma_value] * num_elements for _ in range(num_agents)],
-        'num_agents': 3,
-        'ref_cost_threshold': 25,
-        'prob': 0.99,
-        'TOL_CC_ERROR': 0.00001,
-        'initial_mu': 0.005,
-        'phi':2,
-        'd_safe': 0.5
-    }
     
 
     total_violations = 0
 
-    for i in range(100):
+    for i in range(1):
 
         config = {
             'dt': 0.6,
             'HORIZON': 30,
-            'initial_vels': [0.1, 0.1, 0.3],
-            'x0s': [[3.0, -1.0, np.pi], [-3.0, 1.0, 0.0], [-1, 4.0, -np.pi/2]],
-            'xrefs': [[-2, -1, np.pi, 0], [3, 1.0,  0, 0], [-1, -3.0,  -np.pi/2, 0]],
+            'initial_vels': [0.0, 0.0, 0.0, 0],
+            'x0s': [[3.0, -1.2, np.pi], [3.0, 1.2, np.pi], [2, 0, np.pi], [0, 4, -np.pi/2]],
+            'xrefs': [[-1.8, -1.2, np.pi, 0], [-1.8, 1.2,  np.pi, 0], [-3, 0,  np.pi, 0], [0, -3, -np.pi/2, 0]],
             'sigmas': [[sigma_value] * num_elements for _ in range(num_agents)],
-            'num_agents': 3,
+            'num_agents': 4,
             'ref_cost_threshold': 25,
             'prob': 0.99,
             'TOL_CC_ERROR': 0.00001,
@@ -502,20 +494,22 @@ def main():
         # Create an instance of the CCILQGame class
         game = CCILQGame(config)
         # Solve the game
-        traj, times, xs, xs_real = game.solve(plot = False)
+        traj, times, xs, xs_real = game.solve(plot = True)
         
         violation = False
         for i in range(len(xs)):
             for j in range(len(xs[i])):
                 if np.abs(xs[i][j][3]) > 0.6:
                     violation = True
-                    print(f'Robot {i} has speed {xs[i][j][3]} at time {times[j]}')
+                    # print(f'Robot {i} has speed {xs[i][j][3]} at time {times[j]}')
                 for k in range(len(xs)):
                     if k != i:
                         distance = np.sqrt((xs_real[i][j][0] - xs_real[k][j][0])**2 + (xs_real[i][j][1] - xs_real[k][j][1])**2)
+                        if k == 2:
+                            print(xs[i][j][0] - xs[k][j][0], xs[i][j][1]-  xs[k][j][1])
                         if distance < config['d_safe']:
                             violation = True
-                            print(f'Robots {i} and {k} are too close ({distance}) at time {times[j]}')
+                            # print(f'Robots {i} and {k} are too close ({distance}) at time {times[j]}')
 
         if not violation:
             print('No speed or distance violation detected')

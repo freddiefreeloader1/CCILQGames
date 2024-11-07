@@ -52,6 +52,73 @@ class ProximityCost:
 
     def gradient_u(self, x, u):
         return [0.0 for _ in range(len(u))]
+    def gradient_u(self, x, u):
+        return [0.0 for _ in range(len(u))]
+
+
+class RelativeCost:
+    def __init__(self, idx1=0, idx2=0, weight=1.0, Q=None):
+        self.idx1 = idx1
+        self.idx2 = idx2
+        self.weight = weight
+        self.Q = Q if Q is not None else np.eye(4)  # Default to identity matrix if Q is not provided
+
+    def evaluate(self, x, u):
+        r = np.array([1.0, 1.0, 0, 0])  # Adjust as necessary for your specific relative state
+        relative_state = np.array([
+            np.abs(x[4*self.idx1] - x[4*self.idx2]) - r[0],
+            np.abs(x[4*self.idx1 + 1] - x[4*self.idx2 + 1]) - r[1],
+            np.abs(x[4*self.idx1 + 2] - x[4*self.idx2 + 2]) - r[2],
+            np.abs(x[4*self.idx1 + 3] - x[4*self.idx2 + 3]) - r[3]
+        ])
+        cost = relative_state.T @ self.Q @ relative_state
+        return cost
+
+    def gradient_x(self, x, u):
+        r = np.array([1.0, 1.0, 0, 0])  # Adjust as necessary for your specific relative state
+        relative_state = np.array([
+            np.abs(x[4*self.idx1] - x[4*self.idx2]) - r[0],
+            np.abs(x[4*self.idx1 + 1] - x[4*self.idx2 + 1]) - r[1],
+            np.abs(x[4*self.idx1 + 2] - x[4*self.idx2 + 2]) - r[2],
+            np.abs(x[4*self.idx1 + 3] - x[4*self.idx2 + 3]) - r[3]
+        ])
+
+        sign_relative_state = np.sign([
+            x[4*self.idx1] - x[4*self.idx2],
+            x[4*self.idx1 + 1] - x[4*self.idx2 + 1],
+            x[4*self.idx1 + 2] - x[4*self.idx2 + 2],
+            x[4*self.idx1 + 3] - x[4*self.idx2 + 3]
+        ])
+
+        grad_relative_state = 2 * self.Q @ relative_state * sign_relative_state
+
+        grad_x = np.zeros(len(x))
+        grad_x[4*self.idx1] = grad_relative_state[0]
+        grad_x[4*self.idx1 + 1] = grad_relative_state[1]
+        grad_x[4*self.idx1 + 2] = grad_relative_state[2]
+        grad_x[4*self.idx1 + 3] = grad_relative_state[3]
+        grad_x[4*self.idx2] = 0
+        grad_x[4*self.idx2 + 1] = 0
+        grad_x[4*self.idx2 + 2] = 0
+        grad_x[4*self.idx2 + 3] = 0
+
+        return grad_x
+
+    def hessian_x(self, x, u):
+        H = np.zeros((len(x), len(x)))
+
+        for i in range(4):
+            H[4*self.idx1 + i, 4*self.idx1 + i] = 2 * self.Q[i, i]
+            H[4*self.idx2 + i, 4*self.idx2 + i] = 2 * self.Q[i, i]
+            H[4*self.idx1 + i, 4*self.idx2 + i] = 0
+            H[4*self.idx2 + i, 4*self.idx1 + i] = 0
+
+        return H
+
+    def gradient_u(self, x, u):
+        return [0.0 for _ in range(len(u))]
+
+
     
         
 class ProximityCostUncertainLinear:
@@ -230,9 +297,9 @@ class SpeedCost:
 
     def evaluate(self, x, u, lam, flag = True):
         if flag:
-            return lam*self.weight*((x[4*self.idx+3])**2 - 0.6**2)
+            return lam*self.weight*((x[4*self.idx+3])**2 - 0.9**2)
         else:
-            return self.weight*((x[4*self.idx+3])**2 - 0.6**2)
+            return self.weight*((x[4*self.idx+3])**2 - 0.9**2)
 
     def gradient_x(self, x, u, lam):
         grad_x = [0.0 for _ in range(len(x))]

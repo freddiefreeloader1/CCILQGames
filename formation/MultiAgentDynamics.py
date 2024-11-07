@@ -1,6 +1,6 @@
 from scipy.linalg import block_diag
 
-from Costs import ProximityCost, OverallCost, ReferenceCost, WallCost, InputCost, ProximityCostUncertainLinear, ProximityCostUncertainQuad, SpeedCost
+from Costs import ProximityCost, OverallCost, ReferenceCost, WallCost, InputCost, ProximityCostUncertainLinear, ProximityCostUncertainQuad, SpeedCost, RelativeCost
 
 import numpy as np
 from scipy.special import erfinv
@@ -51,20 +51,25 @@ class MultiAgentDynamics():
         input_cost_list = [[] for _ in range(len(self.agent_list))]
         overall_cost_list = [[] for _ in range(len(self.agent_list))]
         speed_cost_list = [[] for _ in range(len(self.agent_list))]
+        relative_cost_list = [[] for _ in range(len(self.agent_list))]
 
         for i, agent in enumerate(self.agent_list):
-            ref_cost_list[i].append(ReferenceCost(i, self.xref_mp, [40,40,40,0]))
+            if i == 2 or i == 3:
+                ref_cost_list[i].append(ReferenceCost(i, self.xref_mp, [40,40,40,0]))
+            else:
+                relative_cost_list[i].append(RelativeCost(idx1=i, idx2=2, Q = np.diag([10,10,10,10])))
             input_cost_list[i].append(InputCost(i, 300.0, 200.0))
+
             
             if True:
                 speed_cost_list[i].append(SpeedCost(i, 10))
                 
 
-        if uncertainty == False:
+        if False:
             for i in range(len(self.agent_list)):
                 for j in range(len(self.agent_list)):
                     if i != j:
-                        prox_cost_list[i].append(ProximityCost(0.5, i, j, 500.0))
+                        prox_cost_list[i].append(ProximityCost(0.5, i, 2, 500.0))
         else:
             for i in range(len(self.agent_list)):
                 for j in range(len(self.agent_list)-1):
@@ -76,7 +81,7 @@ class MultiAgentDynamics():
 
         for i in range(len(self.agent_list)):
             # add the reference cost and the proximity cost to the overall cost list
-            cost_list = ref_cost_list[i] + prox_cost_list[i] + wall_cost_list[i] + input_cost_list[i] + speed_cost_list[i]
+            cost_list = ref_cost_list[i] + input_cost_list[i] + relative_cost_list[i] + prox_cost_list[i] + speed_cost_list[i] 
             overall_cost_list[i].append(OverallCost(cost_list, self.ref_cost_threshold))
         return overall_cost_list
    
