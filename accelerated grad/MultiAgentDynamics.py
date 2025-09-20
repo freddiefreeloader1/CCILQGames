@@ -113,7 +113,6 @@ class MultiAgentDynamics():
                 for k in range(len(current_points[i][j])):
                     if np.abs(np.array(current_points[i][j][k]) - np.array(last_points[i][j][k])) > 1:
                         return 0
-
         return 1
 
     def get_Gs(self, xs, prox_cost_list, sigmas):

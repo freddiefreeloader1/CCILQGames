@@ -48,7 +48,7 @@ class CCILQGame():
         return mp_dynamics
     
     def get_mu(self):
-        mu = np.array([[1]*(self.num_agents)]*(self.num_agents))*self.initial_mu
+        mu = np.array([[1.0]*(self.num_agents)]*(self.num_agents))*self.initial_mu
         return mu
 
     def solve(self, plot = True):
@@ -144,6 +144,8 @@ class CCILQGame():
                 prev_control_inputs[i][t] = [u1[i][t], u2[i][t]]
 
         lambdas = np.zeros((self.mp_dynamics.num_agents, self.mp_dynamics.num_agents))
+        lambda_next = np.zeros((self.mp_dynamics.num_agents, self.mp_dynamics.num_agents))
+        lambda_hats = np.zeros((self.mp_dynamics.num_agents, self.mp_dynamics.num_agents))
         Is = np.zeros((self.mp_dynamics.num_agents, self.mp_dynamics.num_agents-1))
         Is = self.mu.copy()
 
@@ -171,6 +173,8 @@ class CCILQGame():
         ax.grid(True)
         colors = ['ro', 'go', 'bo', 'co', 'mo', 'yo']
 
+        t = 1
+        total_iter = 1
         outer_iter = 1
 
         try:
@@ -190,17 +194,28 @@ class CCILQGame():
                     max_errors = np.float32(np.max(np.array(errors), 2))
                     max_error = np.max(max_errors)
                 print("Constraint Violation: ", max_error)
+                total_iter += 1
+
+                t_next = (1+np.sqrt(1+4*t**2))/2
+                print("t: ", t_next)
+
+
                 for i in range(self.mp_dynamics.num_agents):
-                    
                     for j in range(self.mp_dynamics.num_agents):
                         if j != self.mp_dynamics.num_agents - 1:
-                            lambdas[i][j] = max(0, lambdas[i][j] + (2/np.sqrt(outer_iter))  * (self.prob - max_errors[i][j]))
+                            lambda_next[i][j] = max(0, lambda_hats[i][j] + (2/np.sqrt(outer_iter)) * (self.prob - max_errors[i][j]))
+                            lambda_hats[i][j] = lambda_next[i][j] + ((t-1)/t_next)*(lambda_next[i][j] - lambdas[i][j])
+                            lambdas[i][j] = lambda_next[i][j]
                         else:
-                            lambdas[i][j] = max(0, lambdas[i][j] + (2/np.sqrt(outer_iter))  * (max_errors[i][j]))
+                            lambda_next[i][j] = max(0, lambda_hats[i][j] + (2/np.sqrt(outer_iter)) * (max_errors[i][j]))
+                            lambda_hats[i][j] = lambda_next[i][j] + ((t-1)/t_next)*(lambda_next[i][j] - lambdas[i][j])
+                            lambdas[i][j] = lambda_next[i][j]
                             
                         Is[i][j] = 0 if (self.prob - max_error < 0.0)&(lambdas[i][j] == 0) else 0.005
 
-                print("Lambdas: ", lambdas)
+                print("lamdas: ", lambdas)
+
+                t = t_next
 
                 for i in range(self.mp_dynamics.num_agents):
                     for j in range(self.mp_dynamics.num_agents):
@@ -212,6 +227,7 @@ class CCILQGame():
 
                 outer_iter += 1
                 print(f'Outer Iteration {outer_iter}')
+
                 while (flag == 0):
 
                     start = time.time()
@@ -228,6 +244,7 @@ class CCILQGame():
                                     errors[i][k].append(error)
                         max_errors = np.float32(np.max(np.array(errors), 2))
                         max_error = np.max(max_errors)
+                        
                     # print('Max Error:', max_error)
                     
                     # integrate the dynamics
@@ -383,11 +400,12 @@ class CCILQGame():
 
         vr, vl = self.mp_dynamics.compute_wheel_speeds(u1, u2)
 
+            
         # plot costs
         plt.figure()
         # plt.plot(total_costs)
         # plt.plot(total_prox_costs)
-        plt.plot(total_ref_costs + total_input_costs)
+        plt.plot(total_ref_costs + total_input_costs + total_prox_costs)
         print("total cost is:", (total_ref_costs +  total_input_costs + total_prox_costs)[-1])
         # plt.plot(total_input_costs)
         # plt.plot(total_wall_costs)
@@ -469,7 +487,6 @@ def main(initial_positions, reference_positions):
     sigma_value = 0.005
     num_elements = 4
     num_agents = 3
-
 
     total_violations = 0
 
@@ -569,8 +586,8 @@ def on_click(event):
             print("Initial Positions, Reference Positions, Initial Headings and Reference Headings selected.")
             plt.legend(loc='upper left')
 
-if __name__ == "__main__":
 
+if __name__ == "__main__":
 
     # initial_positions = []
     # reference_positions = []
@@ -617,6 +634,5 @@ if __name__ == "__main__":
 
     fourth_init = [[2, 1, -np.pi], [1, 3, -np.pi/2], [1, -3, np.pi/2]]
     fourth_reference = [[-3, 0, -np.pi,0], [-1, -3, -np.pi/2,0], [1, 3, np.pi/2, 0]]
-
 
     main(second_init, second_reference)

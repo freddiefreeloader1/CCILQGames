@@ -88,7 +88,7 @@ class ProximityCostUncertainQuad:
 
     def gradient_x(self, x, G, q, rho, I):
         cost = self.weight*(I/2)*(G @ x  + q + rho)
-        grad_x = 2* cost* np.array(G)
+        grad_x = 2 * cost * np.array(G)
         return grad_x
 
     def gradient_u(self, x, u):
